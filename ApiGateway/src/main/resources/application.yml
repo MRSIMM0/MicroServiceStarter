@@ -1,0 +1,23 @@
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+spring:
+  cloud:
+    gateway:
+      discovery:
+            locator:
+              enabled: true
+      routes:
+        - id: auth-service-id
+          uri: lb://auth-service
+          predicates:
+            Path=/api/v1/**
+
+management:
+  endpoint:
+    gateway:
+      enabled: true
+server:
+  port: 8080

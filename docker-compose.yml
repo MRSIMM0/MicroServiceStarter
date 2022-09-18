@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+  discovery-server:
+    container_name: discoveryServer
+    image: 'discovery-server:latest'
+    build:
+      context: ./DiscoveryServer
+    ports:
+      - '8761:8761'
+    networks:
+      - discovery-server
+
+
+  auth-db:
+    container_name: auth
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+    expose:
+        - '5432:5432'
+    volumes:
+        - auth-db:/var/lib/postgresql/data
+    networks:
+      - auth-db
+
+
+  auth-liquibase:
+    container_name: auth-liquibase
+    depends_on:
+      auth-db:
+        condition: service_started
+      discovery-server:
+        condition: service_started
+
+
+    image: liquibase/liquibase
+    command: --changeLogFile=/change-log.xml update  --url=jdbc:postgresql://auth-db:5432/postgres --username=postgres --password=postgres
+    volumes:
+      - ./AuthService/src/main/resources/db/change-log.xml:/liquibase/change-log.xml
+      - ./AuthService/src/main/resources/db/entities/:/liquibase/entities/
+    networks:
+      - auth-db
+
+
+  auth-service:
+    image: 'auth-service:latest'
+    build:
+      context: ./AuthService
+    container_name: auth-service
+    depends_on:
+      auth-liquibase:
+         condition: service_started
+      discovery-server:
+        condition: service_started
+    networks:
+      - discovery-server
+      - auth-db
+
+    environment:
+      - EUREKA_CLIENT_SERVICE_URL_DEFAULTZONE=http://discovery-server:8761/eureka
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://auth-db:5432/postgres
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+
+  gateway:
+
+    container_name: gateway-service
+    image: 'gateway-service:latest'
+    build:
+      context: ./ApiGateway
+    depends_on:
+      auth-service:
+        condition: service_started
+    ports:
+      - '8082:8080'
+    environment:
+      spring.application.name: gateway-service
+      server.port: 8080
+      eureka.client.serviceUrl.defaultZone: http://discovery-server:8761/eureka
+      eureka.client.fetch-registry: true
+      eureka.client.register-with-eureka: true
+      eureka.instance.prefer-ip-address: true
+    networks:
+      -   discovery-server
+
+volumes:
+  auth-db:
+    driver: local
+
+networks:
+  auth-db:
+  discovery-server:
+
