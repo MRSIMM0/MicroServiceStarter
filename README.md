@@ -11,7 +11,7 @@ The eureka default port `8761` and it will be exposed and can be used to access 
 
 Api gateway is on port `8080` and it is the access point for the application
 
-##Auth service
+## Auth service
 
 It uses bearer token to authorize incoming requests.
 
