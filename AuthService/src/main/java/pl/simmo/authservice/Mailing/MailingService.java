@@ -1,7 +1,9 @@
 package pl.simmo.authservice.Mailing;
 
 import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailMessage;
 import org.springframework.mail.SimpleMailMessage;
@@ -11,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import pl.simmo.authservice.Models.UserModel;
+import pl.simmo.authservice.Utils.EnvUtil;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
@@ -25,13 +28,20 @@ public class MailingService {
 
     private final TemplateEngine templateEngine;
 
+    private final  EnvUtil util;
+
+    @SneakyThrows
     public void sendEmail(UserModel userModel, String token) throws MessagingException {
         MimeMessage message = javaMailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message,
                 MimeMessageHelper.MULTIPART_MODE_MIXED_RELATED,
                 StandardCharsets.UTF_8.name());
         Context context = new Context();
-        context.setVariables(Map.of("userModel",userModel,"token",token));
+
+        String mailAddress = util.getServerUrlPrefix()+ "/api/v1/activate/"+token;
+
+
+        context.setVariables(Map.of("userModel",userModel,"mailAddress",mailAddress));
 
         String html = templateEngine.process("activate", context);
         helper.setTo(userModel.getEmail());

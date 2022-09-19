@@ -69,12 +69,7 @@ public class UserController {
     }
     @PostMapping("/validate")
     public ResponseEntity validate(@RequestHeader(HttpHeaders.AUTHORIZATION) String token){
-
-
-
-
-
-
+        
         try {
             tokenManager.validateToken(token);
         } catch (Exception e) {

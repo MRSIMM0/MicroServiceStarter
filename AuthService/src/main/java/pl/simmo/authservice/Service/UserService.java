@@ -42,10 +42,19 @@ public class UserService {
            throw new EmailAlreadyInUseException("Email already in use: "+registerDTO.getEmail());
        }
 
-        UserModel model = UserModel.builder().username(registerDTO.getUsername()).password(passwordEncoder
-                .encode(registerDTO.getPassword()))
+       Role role;
+
+       if(roleRepository.findByName(RoleEnum.USER.name()).isPresent()){
+           role = roleRepository.findByName(RoleEnum.USER.name()).get();
+       }else {
+           role = roleRepository.save(new Role(RoleEnum.USER));
+       }
+
+        UserModel model = UserModel.builder()
+                .username(registerDTO.getUsername())
+                .password(passwordEncoder.encode(registerDTO.getPassword()))
                 .email(registerDTO.getEmail())
-                .roles(Set.of(roleRepository.findByName(RoleEnum.USER).orElse(roleRepository.save(new Role(RoleEnum.USER)))))
+                .roles(Set.of(role))
                 .active(false)
                 .build();
 
